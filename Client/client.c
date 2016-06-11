@@ -3,11 +3,12 @@
 //
 
 #include "client.h"
+#include "../Common/socketHelpers.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define INPUT_LENGTH 40
+#define INPUT_MAX_LENGTH 90 //max length is here: !connect username(31)@IPv6(45):port(4)
 #define COMMAND_LENGTH 8
 
 volatile __sig_atomic_t isRunning = 1;
@@ -17,16 +18,16 @@ int ReadCommand(char *commandBuf);
 
 int ProcessCommand(char *command, char *content);
 
+int ConnectToServer(char *content);
+
 int main(int argc, char** argv)
 {
     printf("Hello in client!\n");
-    char commandBuf[COMMAND_LENGTH];
-    char contentBuf[INPUT_LENGTH-COMMAND_LENGTH];
-    char buf[INPUT_LENGTH];
+    char buf[INPUT_MAX_LENGTH];
     while (isRunning)
     {
         printf(">");
-        if(fgets(buf, INPUT_LENGTH+3, stdin)>0) //is always \n at the end and spacebar between content and command and empty char
+        if(fgets(buf, INPUT_MAX_LENGTH+3, stdin)>0) //is always \n at the end and spacebar between content and command and empty char
         {
             if (ReadCommand(buf) < 0)
                 printf("Uncorrect command!\n");
@@ -45,13 +46,13 @@ int ReadCommand(char *commandBuf) {
         return -1;
     char currSign = commandBuf[0];
     char command[COMMAND_LENGTH];
-    char content[INPUT_LENGTH - COMMAND_LENGTH];
+    char content[INPUT_MAX_LENGTH - COMMAND_LENGTH];
     int i = 0;
     do
     {
         command[i] = currSign;
 
-        if(i >= INPUT_LENGTH+2) //not proper command
+        if(i >= INPUT_MAX_LENGTH+2) //not proper command
             return -1;
 
         currSign = commandBuf[++i];
@@ -65,7 +66,7 @@ int ReadCommand(char *commandBuf) {
         {
             content[contentIdx++] = currSign;
 
-            if(i >= INPUT_LENGTH+2) //not proper command
+            if(i >= INPUT_MAX_LENGTH+2) //not proper command
                 return -1;
 
             currSign = commandBuf[++i];
@@ -84,9 +85,54 @@ int ProcessCommand(char* command, char *content) {
     if(strcmp(command, "!connect")==0)
     {
         printf("%s %s\n",command, content);
-        return 1;
+        return ConnectToServer(content);
     }
     else if(strcmp(command, "!bye")==0)
+    {
+        printf("%s\n",command);
+        return 1;
+    }
+    else if(strcmp(command, "!rooms")==0)
+    {
+        printf("%s\n",command);
+        return 1;
+    }
+    else if(strcmp(command, "!open")==0)
+    {
+        printf("%s\n",command);
+        return 1;
+    }
+    else if(strcmp(command, "!close")==0)
+    {
+        printf("%s\n",command);
+        return 1;
+    }
+    else if(strcmp(command, "!enter")==0)
+    {
+        printf("%s\n",command);
+        return 1;
+    }
+    else if(strcmp(command, "!leave")==0)
+    {
+        printf("%s\n",command);
+        return 1;
+    }
+    else if(strcmp(command, "!files")==0)
+    {
+        printf("%s\n",command);
+        return 1;
+    }
+    else if(strcmp(command, "!push")==0)
+    {
+        printf("%s\n",command);
+        return 1;
+    }
+    else if(strcmp(command, "!pull")==0)
+    {
+        printf("%s\n",command);
+        return 1;
+    }
+    else if(strcmp(command, "!rm")==0)
     {
         printf("%s\n",command);
         return 1;
@@ -94,4 +140,39 @@ int ProcessCommand(char* command, char *content) {
     else
         return -1;
 
+}
+
+int ConnectToServer(char *content) {
+    //parsing address, port, username
+    char currChar = content[0];
+    int charCount = 1;
+    char username[31];
+    int i = 0;
+    while(currChar!='@')
+    {
+        username[i] = currChar;
+        currChar = content[charCount++];
+        i++;
+    }
+    username[i] = '\0';
+    i=0;
+    char ip[45]; //45 max of ip address length
+    currChar = content[charCount++];
+    while(currChar != ':' && currChar!='\n' && currChar!='\0')
+    {
+        ip[i] = currChar;
+        currChar = content[charCount++];
+        i++;
+    }
+    ip[i]='\0';
+    char port[4];
+    //charCount++;
+    for (int j = 0; j < 4; ++j) {
+        port[j] = content[charCount++];
+    }
+    printf("%s : %s : %s\n",username,ip,port);
+
+    int fd = connect_socket(ip, atoi(port));
+
+    return 0;
 }
