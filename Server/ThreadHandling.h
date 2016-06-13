@@ -22,6 +22,5 @@ typedef struct
 
 void *threadClientCommandHandler(void *arg);
 int ProcessClientCommand(char *command, char *content, char *sender, struct RoomList *rooms, int fd);
-void ParseMessage(char *sender, char *command, char *commandContent, char *message);
 
 #endif //CHATROOMUNIX_THREADHANDLING_H

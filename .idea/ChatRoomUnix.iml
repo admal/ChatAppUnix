@@ -13,9 +13,11 @@
       <sourceFolder url="file://$MODULE_DIR$/Client/client.c" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Client/client.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Common/signalHelpers.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Common/socketHelpers.c" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Common/socketHelpers.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Common/signalHelpers.c" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Common/socketHelpers.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Common/Messaging.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Common/socketHelpers.c" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Common/Messaging.c" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">

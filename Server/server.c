@@ -136,6 +136,9 @@ int ParseLine(char *out1, char *out2, char *line)
 }
 
 int InitServer() {
+    //add anteroom
+    AddEmptyRoomAtEnd(&g_RoomList, "admin","anteroom");
+
     FILE* serverConfig;
     if((serverConfig = fopen(CONFIG_SERVER_FILENAME, "a+"))==NULL) //create file if one does not exist
     {

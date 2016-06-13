@@ -4,21 +4,42 @@
 
 #include "client.h"
 #include "../Common/socketHelpers.h"
+#include "../Common/Messaging.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define INPUT_MAX_LENGTH 90 //max length is here: !connect username(31)@IPv6(45):port(4)
 #define COMMAND_LENGTH 8
+#define MAX_MSG_SIZE 200
 
 volatile __sig_atomic_t isRunning = 1;
-
+char g_username[31];
+char g_serverip[45];
+char g_currroom[31];
+int g_port;
 
 int ReadCommand(char *commandBuf);
 
 int ProcessCommand(char *command, char *content);
 
 int ConnectToServer(char *content);
+
+int GetRooms(char *command);
+
+int SendMessage(char *msg);
+
+int EnterRoom(char *command, char *content);
+
+int LeaveRoom();
+
+int Disconnect();
+
+void ClearGlobals();
+
+int OpenRoom(char *command, char *content);
+
+int CloseRoom(char *content);
 
 int main(int argc, char** argv)
 {
@@ -58,7 +79,10 @@ int ReadCommand(char *commandBuf) {
         currSign = commandBuf[++i];
     }
     while(currSign != ' ' && currSign != '\n');
+
+
     command[i] = '\0'; //put empty char at the end of the command
+    currSign = commandBuf[++i];
     if(strlen(commandBuf) > i+1)//prepare content // i+1 because always at the end of command is \n or spacebar
     {
         int contentIdx = 0;
@@ -90,32 +114,32 @@ int ProcessCommand(char* command, char *content) {
     else if(strcmp(command, "!bye")==0)
     {
         printf("%s\n",command);
-        return 1;
+        return Disconnect();
     }
     else if(strcmp(command, "!rooms")==0)
     {
         printf("%s\n",command);
-        return 1;
+        return GetRooms(command);
     }
     else if(strcmp(command, "!open")==0)
     {
         printf("%s\n",command);
-        return 1;
+        return OpenRoom(command, content);
     }
     else if(strcmp(command, "!close")==0)
     {
         printf("%s\n",command);
-        return 1;
+        return CloseRoom(content);
     }
     else if(strcmp(command, "!enter")==0)
     {
         printf("%s\n",command);
-        return 1;
+        return EnterRoom(command, content);
     }
     else if(strcmp(command, "!leave")==0)
     {
         printf("%s\n",command);
-        return 1;
+        return LeaveRoom();
     }
     else if(strcmp(command, "!files")==0)
     {
@@ -140,6 +164,97 @@ int ProcessCommand(char* command, char *content) {
     else
         return -1;
 
+}
+
+int CloseRoom(char *content) {
+    char msg[1000];
+    PrepareMessage(msg, "!close", content, g_username);
+    int fd = SendMessage(msg);
+    char response[1000];
+    bulk_read(fd, response, 200);
+    if(strcmp(response, content)==0)
+    {
+        printf("Room closed properly!\n");
+        return 1;
+    }
+    return -1;
+}
+
+int OpenRoom(char *command, char *content) {
+    char msg[1000];
+    PrepareMessage(msg, "!open", content, g_username);
+    int fd = SendMessage(msg);
+    char response[1000];
+    bulk_read(fd, response, 200);
+    if(strcmp(response, content)==0)
+    {
+        printf("Room created properly!\n");
+        return 1;
+    }
+    return -1;
+}
+
+int Disconnect() {
+    char msg[1000];
+    PrepareMessage(msg,"!bye","",g_username);
+    SendMessage(msg);
+    ClearGlobals();
+    printf("DISCONNECTED!\n");
+}
+
+void ClearGlobals() {
+    g_currroom[0] = '\0';
+    g_username[0] = '\0';
+    g_port = -1;
+    g_serverip[0] = '\0';
+}
+
+int LeaveRoom() {
+    char msg[1000];
+    PrepareMessage(msg,"!leave","",g_username);
+    int fd = SendMessage(msg);
+    char response[1000];
+    bulk_read(fd, response, 9);
+    if(strcmp(response, "bye")==0)
+    {
+        ClearGlobals();
+        printf("DISCONNECTED!\n");
+        return 1;
+    }
+    printf("%s\n", response);
+    strcpy(g_currroom, response);
+    return 1;
+}
+
+int EnterRoom(char *command, char *content) {
+    if(strcmp(g_currroom, "anteroom") != 0) //it is not default room so u can not move to other
+    {
+        printf("You need to leave current room to be able to enter other!\n");
+        return -1;
+    }
+    char msg[MAX_MSG_SIZE];
+    PrepareMessage(msg, command, content, g_username);
+    int fd = SendMessage(msg);
+    char response[1000];
+    bulk_read(fd, response, 200);
+    if(strcmp(response, content)!=0)
+    {
+        printf("You are not in the anteroom or there is no room with a given name!\n");
+        return -1;
+    }
+    strcpy(g_currroom, content);
+    printf("%s", response);
+    return 1;
+}
+
+int GetRooms(char *command) {
+    char msg[MAX_MSG_SIZE];
+    PrepareMessage(msg, command, "", g_username);
+    int fd =SendMessage(msg);
+    char response[1000];
+    bulk_read(fd, response, 200);
+    printf("Rooms:%s\n", response);
+    return 1;
 }
 
 int ConnectToServer(char *content) {
@@ -172,7 +287,21 @@ int ConnectToServer(char *content) {
     }
     printf("%s : %s : %s\n",username,ip,port);
 
-    int fd = connect_socket(ip, atoi(port));
+    g_port = atoi(port);
+    strcpy(g_serverip, ip);
 
+    char retMsg[MAX_MSG_SIZE];
+    strcpy(g_username, username);
+    PrepareMessage(retMsg, "!connect", content, g_username);
+    SendMessage(retMsg);
+    strcat(g_currroom, "anteroom");
     return 0;
 }
+
+int SendMessage(char *msg) {
+    int fd = connect_socket(g_serverip, g_port);
+    size_t CHUNKSIZE = 200;
+    bulk_write(fd, msg, CHUNKSIZE);
+    return fd;
+}
+
