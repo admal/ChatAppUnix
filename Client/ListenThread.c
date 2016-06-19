@@ -18,9 +18,8 @@ void* listeningThreadHandler(void* arg) {
         if(buf[0]=='|')
             HandleResponse(buf);
         else
-            printf("%s", buf);
+            fprintf(stdout, "%s", buf);
 
-        printf(">");
         buf[0] = '\0';
 //        if(!*targ->doListen)
 //        {
@@ -28,6 +27,11 @@ void* listeningThreadHandler(void* arg) {
 //        }
     }
     free(targ);
+    g_currroom[0] = '\0';
+    g_username[0] = '\0';
+    g_port = -1;
+    g_serverip[0] = '\0';
+    g_serverFd = -1;
     printf("LISTENING: STOP\n");
     return NULL;
 }

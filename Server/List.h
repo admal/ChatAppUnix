@@ -8,12 +8,6 @@
 #include "Globals.h"
 
 
-struct FileInRoom{
-    char* filename;
-    char* owner;
-};
-
-
 struct StringNode{
     char val[MAX_USERNAME_LENGTH];
     struct StringNode *next;
@@ -44,13 +38,31 @@ struct UserList{
 void AddUserAtEnd(struct UserList *list, char *name, int userFd);
 int RemoveUser(struct UserList *list, char *name);
 void PrintUserList(struct UserList *list);
-
+struct UserNode* GetUser(struct UserList *list, char* username);
+//FILES
+struct FileInRoom{
+    char filename[MAX_USERNAME_LENGTH];
+    char owner[MAX_USERNAME_LENGTH];
+};
+struct FileNode{
+    struct FileInRoom file;
+    struct FileNode *next;
+};
+struct FileList{
+    struct FileNode *head;
+    struct FileNode *tail;
+};
+void AddFileAtEnd(struct FileList *list, char *filename, char* owner);
+int RemoveFile(struct FileList *list, char *filename);
+void PrintFileList(struct FileList *list);
+struct FileNode* GetFileNode(struct FileList *list ,char* filename);
 //ROOMs
 struct Room{
     char name[MAX_ROOMNAME_LENGTH];
     char owner[MAX_USERNAME_LENGTH];
 
     struct UserList currentUsers;
+    struct FileList files;
 };
 struct RoomNode{
     struct Room room;
@@ -62,12 +74,10 @@ struct RoomList{
     struct RoomNode *tail;
 };
 
-
 void AddEmptyRoomAtEnd(struct RoomList *list, char *owner, char *roomname);
 int RemoveRoom(struct RoomList *list, char* roomname);
 struct RoomNode* GetRoomNode(struct RoomList *list ,char* roomname);
 struct RoomNode* GetRoomWithUser(struct RoomList *list, char* username);
-void DestroyRoom(struct Room *room);
 void PrintRoomList(struct RoomList *list);
 void GetRooms(struct RoomList *list, char* retString);
 #endif //CHATROOMUNIX_LIST_H

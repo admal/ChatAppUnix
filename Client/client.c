@@ -50,7 +50,6 @@ int main(int argc, char** argv)
     char buf[INPUT_MAX_LENGTH];
     while (isRunning)
     {
-        printf(">");
         if(fgets(buf, INPUT_MAX_LENGTH+3, stdin)>0) //is always \n at the end and spacebar between content and command and empty char
         {
             if (ReadCommand(buf) < 0)
@@ -127,6 +126,11 @@ int ProcessCommand(char* command, char *content) {
     {
        // printf("%s %s\n",command, content);
         return ConnectToServer(content);
+    }
+    else if(g_serverFd < 0)
+    {
+        printf("You must be connected!\n");
+        return -1;
     }
     else if(strcmp(command, "!bye")==0)
     {

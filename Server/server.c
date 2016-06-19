@@ -15,6 +15,7 @@
 
 #include <fcntl.h>
 #include <pthread.h>
+#include <sys/stat.h>
 
 const char CONFIG_SERVER_FILENAME[] = "server.config";
 const char CONFIG_ROOM_FILENAME[] = "room.config";
@@ -32,6 +33,8 @@ void usage(char *argv);
 int InitServer();
 
 void ServerDoWork(int l);
+
+int LoadFileListForRoom(struct FileList *fileList, char* roomname);
 
 int main(int argc, char** argv)
 {
@@ -114,6 +117,8 @@ void ServerDoWork(int fdL) {
 
 int ParseLine(char *out1, char *out2, char *line)
 {
+    out1[0] = '\0';
+    out2[0]='\0';
     char curr = line[0];
     int i = 0;
     int count = 0;
@@ -126,7 +131,7 @@ int ParseLine(char *out1, char *out2, char *line)
     out1[i] = '\0';
     curr = line[++count];
     i=0;
-    while(curr != '\n')
+    while(curr != '\n' && curr!=EOF)
     {
         out2[i++] = curr;
         curr = line[++count];
@@ -136,32 +141,103 @@ int ParseLine(char *out1, char *out2, char *line)
 }
 
 int InitServer() {
-    //add anteroom
-    AddEmptyRoomAtEnd(&g_RoomList, "admin","anteroom");
-
     FILE* serverConfig;
     if((serverConfig = fopen(CONFIG_SERVER_FILENAME, "a+"))==NULL) //create file if one does not exist
     {
         perror("Open config file: ");
         return -1;
     }
+
+    //ANTEROOM
+    int alreadyExist = 0;
+    if(mkdir("anteroom", 0700) < 0)
+    {
+        if(errno == EEXIST) //file exists so server was previously created
+        {
+            alreadyExist = 1;
+        }
+        else
+        {
+            ERR("mkdir");
+            return -1;
+        }
+    }
+    if(!alreadyExist) //the first start of the server
+    {
+        FILE* anteroomConfig;
+        char path[] = "anteroom/room.config";
+        if((anteroomConfig = fopen(path, "a+"))==NULL) //create file if one does not exist
+        {
+            perror("Open anteroom config file: ");
+            return -1;
+        }
+        if(fprintf(serverConfig,"%s", "anteroom|admin\n")==0)
+        {
+            perror("Writing anteroom to server config: ");
+            return -1;
+        } //remember that anteroom exists
+        //add anteroom
+        AddEmptyRoomAtEnd(&g_RoomList, "admin","anteroom");
+        fclose(serverConfig);
+        fclose(anteroomConfig);
+        return 1; //server is empty so there is no other rooms
+    }
+    //REST OF ROOMS
     char line[MAX_USERNAME_LENGTH + MAX_ROOMNAME_LENGTH + 1]; //+1 because '|' char is added
     int len = MAX_ROOMNAME_LENGTH+MAX_USERNAME_LENGTH;
     while(fgets(line, len, serverConfig) != NULL)
     {
         char owner[MAX_USERNAME_LENGTH+1];
         char roomname[MAX_ROOMNAME_LENGTH+1];
+        owner[0] = '\0';
+        roomname[0] = '\0';
 
         if(ParseLine(roomname, owner, line) < 0)
             return -1;
 
         AddEmptyRoomAtEnd(&g_RoomList , owner, roomname);
+        LoadFileListForRoom(&g_RoomList.tail->room.files, g_RoomList.tail->room.name);
+        line[0]='\0';
     }
     printf("Available rooms: \n");
     PrintRoomList(&g_RoomList);
     //cleanup
     fclose(serverConfig);
     return 0;
+}
+
+int LoadFileListForRoom(struct FileList *fileList, char* roomname)
+{
+    char path[MAX_ROOMNAME_LENGTH +  11];
+    path[0] = '\0';
+    strcat(path, roomname);
+    strcat(path, "/");
+    strcat(path, CONFIG_ROOM_FILENAME);
+
+    FILE* roomConfig;
+    if((roomConfig = fopen(path, "r"))==NULL)
+    {
+        perror("Open room config file: ");
+        return -1;
+    }
+
+    char line[MAX_USERNAME_LENGTH + MAX_USERNAME_LENGTH + 1]; //+1 because '|' char is added
+    int len = MAX_USERNAME_LENGTH+MAX_USERNAME_LENGTH;
+    while(fgets(line, len, roomConfig) != NULL)
+    {
+        char filename[MAX_ROOMNAME_LENGTH+1];
+        char owner[MAX_USERNAME_LENGTH+1];
+        filename[0] = '\0';
+        owner[0] = '\0';
+        if(ParseLine(filename, owner, line) < 0)
+            return -1;
+
+        AddFileAtEnd(fileList, filename, owner);
+    }
+    printf("%s: Files: \n", roomname);
+    PrintFileList(fileList);
+    fclose(roomConfig);
+    return 1;
 }
 
 void usage(char *argv) {

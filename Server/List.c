@@ -6,7 +6,9 @@
 #include <string.h>
 #include "List.h"
 
-//STRING LIST
+/*
+ * STRING LIST FUNCTIONS (TMP)
+ */
 void AddNodeAtEnd(struct StringList *list ,char* nodeVal)
 {
     struct StringNode *node = (struct StringNode*)malloc(sizeof(struct StringNode));
@@ -63,12 +65,15 @@ void PrintStringList(struct StringList *list)
         curr=curr->next;
     }
 }
-//ROOM LIST
+/*
+ * ROOM LIST FUNCTIONS
+ */
 void AddEmptyRoomAtEnd(struct RoomList *list, char *owner, char *roomname)
 {
     struct RoomNode *node = (struct RoomNode*)malloc(sizeof(struct RoomNode));
-    strncpy(node->room.owner, owner, strlen(owner));
-    strncpy(node->room.name, roomname, strlen(roomname));
+    strcpy(node->room.owner, owner);
+    strcpy(node->room.name, roomname);
+
     node->next = NULL;
 
     if(list->head == NULL)
@@ -142,10 +147,6 @@ int RemoveRoom(struct RoomList *list, char* roomname)
     }
     return -1; //there is no such string
 }
-void DestroyRoom(struct Room *room)
-{
-    return;
-}
 struct RoomNode* GetRoomNode(struct RoomList *list ,char* roomname)
 {
     struct RoomNode *curr = list->head;
@@ -171,11 +172,13 @@ void PrintRoomList(struct RoomList *list)
     }
 }
 
-//USER LIST
+/*
+ * USER LIST FUNCTIONS
+ */
 void AddUserAtEnd(struct UserList *list, char *name, int userFd) {
     struct UserNode *node = (struct UserNode*)malloc(sizeof(struct UserNode));
     node->next = NULL;
-    strncpy(node->user.name, name, strlen(name));
+    strcpy(node->user.name, name);
     node->user.fd = userFd;
     if(list->head == NULL)
     {
@@ -227,6 +230,113 @@ void PrintUserList(struct UserList *list) {
         curr=curr->next;
     }
 }
+struct UserNode* GetUser(struct UserList *list, char* username)
+{
+    struct UserNode *curr = list->head;
+    while(curr != NULL)
+    {
+        if(strcmp(curr->user.name, username) == 0)
+            return curr;
+        curr=curr->next;
+    }
+    return NULL;
+}
+
+/*
+ * FILE LIST FUNCTIONS
+ */
+void AddFileAtEnd(struct FileList *list, char *filename, char* owner)
+{
+    struct FileNode *node = (struct FileNode*)malloc(sizeof(struct FileNode));
+    node->next = NULL;
+    strcpy(node->file.filename, filename);
+    strcpy(node->file.owner, owner);
+    if(list->head == NULL)
+    {
+        list->head = node;
+        list->tail = node;
+    }
+    else
+    {
+        list->tail->next = node;
+        list->tail = node;
+    }
+}
+
+int RemoveFile(struct FileList *list, char *filename)
+{
+    struct FileNode *curr = list->head;
+    struct FileNode *prev = NULL;
+
+    if(strcmp(list->head->file.filename, filename)==0) //removing head
+    {
+        // free(list->head);
+        list->head = list->head->next;
+        return 1;
+    }
+    curr = list->head->next;
+    prev = list->head;
+    while(curr != NULL)
+    {
+        if(strcmp(curr->file.filename,filename)==0)
+        {
+            if(curr == list->tail)
+            {
+                list->tail = prev;
+            }
+            prev->next = curr->next;
+            free(curr);
+            return 1;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
+    return -1;
+}
+
+void PrintFileList(struct FileList *list)
+{
+    struct FileNode *curr = list->head;
+    while(curr != NULL)
+    {
+        printf("     %s : %s\n", curr->file.filename, curr->file.owner);
+        curr=curr->next;
+    }
+}
+
+struct FileNode *GetFileNode(struct FileList *list, char *filename) {
+    struct FileNode *curr = list->head;
+    while(curr != NULL)
+    {
+        if(strcmp(curr->file.filename, filename) == 0)
+        {
+            return curr;
+        }
+        curr=curr->next;
+    }
+    return NULL;
+}
+void FilesToString(struct FileList *list, char* retString)
+{
+    struct FileNode *curr = list->head;
+    retString[0] = '\0';
+    while(curr != NULL)
+    {
+        strcat(retString, curr->file.filename);
+        strcat(retString, " (");
+        strcat(retString, curr->file.owner);
+        strcat(retString, ")\n");
+        curr=curr->next;
+    }
+}
+
+
+
+
+
+
+
+
 
 
 
