@@ -2,7 +2,6 @@
 // Created by adam on 5/20/16.
 //
 
-#include "server.h"
 #include "../Common/socketHelpers.h"
 #include "List.h"
 #include "../Common/signalHelpers.h"
@@ -19,7 +18,9 @@
 
 const char CONFIG_SERVER_FILENAME[] = "server.config";
 const char CONFIG_ROOM_FILENAME[] = "room.config";
-
+/*
+ * Global list of all rooms.
+ */
 struct RoomList g_RoomList;
 
 volatile __sig_atomic_t doWork = 1;
@@ -29,11 +30,17 @@ void sigintHandler(int sig){
 }
 
 void usage(char *argv);
-
+/*
+ * Load all config files into g_RoomList and start server to listen on the given port.
+ */
 int InitServer();
-
+/*
+ * Server starts threads to handle user messages.
+ */
 void ServerDoWork(int l);
-
+/*
+ * Load config file of given room and init list of files for given room.
+ */
 int LoadFileListForRoom(struct FileList *fileList, char* roomname);
 
 int main(int argc, char** argv)
@@ -55,7 +62,7 @@ int main(int argc, char** argv)
 
     printf("Server started\n");
     printf("Waiting for connections...\n");
-    int fdL = bind_inet_socket(atoi(argv[1]), SOCK_STREAM);
+    int fdL = bind_inet_socket((uint16_t) atoi(argv[1]), SOCK_STREAM);
 
     int newFlags;
     newFlags = fcntl(fdL, F_GETFL)| O_NONBLOCK;
@@ -114,7 +121,9 @@ void ServerDoWork(int fdL) {
     }
     sigprocmask(SIG_UNBLOCK, &mask, NULL);
 }
-
+/*
+ * Parses single line looking like: "content1|content2\n"
+ */
 int ParseLine(char *out1, char *out2, char *line)
 {
     out1[0] = '\0';

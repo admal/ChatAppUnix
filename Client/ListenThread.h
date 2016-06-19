@@ -6,7 +6,6 @@
 #define CHATROOMUNIX_LISTENTHREAD_H
 
 struct ListeningThreadArg{
-    int *doListen;
     int *serverFd;
 };
 

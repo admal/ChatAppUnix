@@ -6,9 +6,8 @@
 #include "Messaging.h"
 
 /*
- * Download file from fdSource and save it in destinationPath
+ * Send given file through given file descriptor.
  */
-
 int SendFile(int destFd, char* filename, char* sender, char* filePath)
 {
     const int MSG_SIZE = 900;
@@ -17,7 +16,7 @@ int SendFile(int destFd, char* filename, char* sender, char* filePath)
     msg[0] = '\0';
     char content[MSG_SIZE];
     int fileFd;
-    if((fileFd=TEMP_FAILURE_RETRY(open(filename,O_RDONLY)))<0){
+    if((fileFd= (int) TEMP_FAILURE_RETRY(open(filename, O_RDONLY))) < 0){
         perror("Open file:");
         return 0;
     }
@@ -29,7 +28,7 @@ int SendFile(int destFd, char* filename, char* sender, char* filePath)
             perror("Read:");
             return 0;
         }
-        if(count < MSG_SIZE) memset(content+count,0,MSG_SIZE-count);
+        if(count < MSG_SIZE) memset(content+count, 0, (size_t) (MSG_SIZE - count));
         if(count>0){
             char finalContent[MSG_SIZE+100];
             finalContent[0]='\0';
@@ -46,7 +45,9 @@ int SendFile(int destFd, char* filename, char* sender, char* filePath)
     }while(count==MSG_SIZE);
     return 1;
 }
-
+/*
+ * Receive and append part of the file.
+ */
 int ReceiveFilePart(char *msgContent, char* roomname)
 {
     char curr = msgContent[0];
@@ -58,7 +59,7 @@ int ReceiveFilePart(char *msgContent, char* roomname)
 
     strcat(filename, roomname);
     strcat(filename,"/");
-    int pathLength = strlen(filename);
+    int pathLength = (int) strlen(filename);
     int i = 0;
     int count = 0;
     while(curr != '\n')
@@ -69,7 +70,7 @@ int ReceiveFilePart(char *msgContent, char* roomname)
     filename[pathLength+i] = '\0';
     curr = msgContent[++count];
     i=0;
-    int contentLength = strlen(msgContent);
+    int contentLength = (int) strlen(msgContent);
     while (count < contentLength)
     {
         fileContent[i++] = curr;
@@ -81,7 +82,7 @@ int ReceiveFilePart(char *msgContent, char* roomname)
 
 int append_to_file (char *filename,char *buf, size_t len){
     int fd;
-    if((fd=TEMP_FAILURE_RETRY(open(filename,O_WRONLY|O_APPEND|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)))<0){
+    if((fd= (int) TEMP_FAILURE_RETRY(open(filename, O_WRONLY | O_APPEND | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP))) < 0){
         perror("Open file:");
         return 0;
     }

@@ -2,7 +2,6 @@
 // Created by adam on 5/20/16.
 //
 
-#include "client.h"
 #include "../Common/socketHelpers.h"
 #include "../Common/Messaging.h"
 #include "../Common/signalHelpers.h"
@@ -66,7 +65,9 @@ int main(int argc, char** argv)
     }
     return EXIT_SUCCESS;
 }
-
+/*
+ * Read and process command
+ */
 int ReadCommand(char *commandBuf) {
 
     //read command
@@ -125,7 +126,9 @@ int ReadCommand(char *commandBuf) {
     content[0] = '\0';
     return x;
 }
-
+/*
+ * Start proper action for command
+ */
 int ProcessCommand(char* command, char *content) {
    // printf("Entered command: %s\n", command);
     if(strcmp(command, "!connect")==0)
@@ -221,21 +224,21 @@ int CheckFiles() {
 int SendMessageToRoom(char *msgContent) {
     char msg[1000];
     PrepareMessage(msg, "!send", msgContent, g_username);
-    int fd = SendMessage(msg);
+    SendMessage(msg);
     return 1;
 }
 
 int CloseRoom(char *content) {
     char msg[1000];
     PrepareMessage(msg, "!close", content, g_username);
-    int fd = SendMessage(msg);
+    SendMessage(msg);
     return 1;
 }
 
 int OpenRoom(char *command, char *content) {
     char msg[1000];
     PrepareMessage(msg, "!open", content, g_username);
-    int fd = SendMessage(msg);
+    SendMessage(msg);
     return 1;
 }
 
@@ -247,6 +250,7 @@ int Disconnect() {
     ClearGlobals();
     g_doListen = 0;
     printf("DISCONNECTED!\n");
+    return 1;
 }
 
 void ClearGlobals() {
@@ -264,7 +268,7 @@ int LeaveRoom() {
         return Disconnect();
     }
     PrepareMessage(msg,"!leave","",g_username);
-    int fd = SendMessage(msg);
+    SendMessage(msg);
     return 1;
 }
 
@@ -276,14 +280,14 @@ int EnterRoom(char *command, char *content) {
     }
     char msg[MAX_MSG_SIZE];
     PrepareMessage(msg, command, content, g_username);
-    int fd = SendMessage(msg);
+    SendMessage(msg);
     return 1;
 }
 
 int GetRooms(char *command) {
     char msg[MAX_MSG_SIZE];
     PrepareMessage(msg, command, "", g_username);
-    int fd =SendMessage(msg);
+    SendMessage(msg);
     return 1;
 }
 
@@ -320,7 +324,7 @@ int ConnectToServer(char *content) {
     g_port = atoi(port);
     strcpy(g_serverip, ip);
 
-    g_serverFd = connect_socket(g_serverip, g_port); //make connection with server
+    g_serverFd = connect_socket(g_serverip, (uint16_t) g_port); //make connection with server
 
     char retMsg[MAX_MSG_SIZE];
     strcpy(g_username, username);
@@ -333,7 +337,6 @@ int ConnectToServer(char *content) {
     if ((targ = (struct ListeningThreadArg *) calloc (1, sizeof(struct ListeningThreadArg))) == NULL)
         ERR("calloc");
     g_doListen = 1;
-    targ->doListen = &g_doListen;
     targ->serverFd = &g_serverFd;
     pthread_t thread;
 

@@ -8,18 +8,7 @@
 #include "../Common/Messaging.h"
 #include "../Common/FileHelpers.h"
 
-void DisconnectUser(char *sender, struct RoomList* rooms);
 
-
-int CreateNewRoom(char *name, char *owner, struct RoomList *rooms);
-
-int CloseUserRoom(char *roomname, char *sender, struct RoomList *rooms);
-
-int SendToAll(char *sender, char *content, struct RoomList* rooms);
-
-int SendPrivate(char *sender, char *msgContent, struct RoomList *rooms, int senderFd);
-
-int AddNewFile(char *filename, char *owner, struct RoomNode* room);
 
 volatile __sig_atomic_t doRun = 1;
 void *threadClientCommandHandler(void *arg)

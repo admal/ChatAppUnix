@@ -4,7 +4,6 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/Server/List.c" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Server/ThreadHandling.c" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Server/server.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Server/Globals.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Server/server.c" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Server/List.h" isTestSource="false" />

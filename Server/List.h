@@ -56,6 +56,9 @@ void AddFileAtEnd(struct FileList *list, char *filename, char* owner);
 int RemoveFile(struct FileList *list, char *filename);
 void PrintFileList(struct FileList *list);
 struct FileNode* GetFileNode(struct FileList *list ,char* filename);
+/*
+ * Write string representation of list to retString
+ */
 void FilesToString(struct FileList *list, char* retString);
 //ROOMs
 struct Room{
@@ -80,5 +83,8 @@ int RemoveRoom(struct RoomList *list, char* roomname);
 struct RoomNode* GetRoomNode(struct RoomList *list ,char* roomname);
 struct RoomNode* GetRoomWithUser(struct RoomList *list, char* username);
 void PrintRoomList(struct RoomList *list);
+/*
+ * Write string representation of room list to retString
+ */
 void GetRooms(struct RoomList *list, char* retString);
 #endif //CHATROOMUNIX_LIST_H
