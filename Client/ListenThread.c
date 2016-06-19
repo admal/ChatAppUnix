@@ -7,6 +7,7 @@
 #include "../Common/socketHelpers.h"
 #include "../Common/Messaging.h"
 #include "ClientGlobals.h"
+#include "../Common/FileHelpers.h"
 
 void HandleResponse(char *buf);
 
@@ -70,5 +71,11 @@ void HandleResponse(char *buf)
     {
         printf("Room: %s closed properly!\n", content);
     }
+    else if(strcmp(command, "!file_request")==0)
+    {
+        printf("%s: started uploading...\n", content);
+        SendFile(g_serverFd,content,g_username,content);
+    }
+
 }
 

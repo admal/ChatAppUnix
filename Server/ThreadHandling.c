@@ -6,6 +6,7 @@
 #include "ThreadHandling.h"
 #include "Globals.h"
 #include "../Common/Messaging.h"
+#include "../Common/FileHelpers.h"
 
 void DisconnectUser(char *sender, struct RoomList* rooms);
 
@@ -18,18 +19,20 @@ int SendToAll(char *sender, char *content, struct RoomList* rooms);
 
 int SendPrivate(char *sender, char *msgContent, struct RoomList *rooms, int senderFd);
 
+int AddNewFile(char *filename, char *owner, struct RoomNode* room);
+
 volatile __sig_atomic_t doRun = 1;
 void *threadClientCommandHandler(void *arg)
 {
     threadArgClientCommand *targ = (threadArgClientCommand*)arg;
     int fd = targ->clientFd;
-    char buf[CHUNKSIZE + 1];
+    char buf[1000 + 1];
 
     while(bulk_read(fd, buf, CHUNKSIZE) > 0)
     {
         char sender[MAX_USERNAME_LENGTH];
         char command[MAX_COMMAND_LENGTH+1];
-        char content[MAX_USERNAME_LENGTH + 45 + 2 + 4]; //31 + maxip + @ + : + portLength
+        char content[900]; //31 + maxip + @ + : + portLength
 
         command[0] = '\0';
         content[0] = '\0';
@@ -174,8 +177,88 @@ int ProcessClientCommand(char *command, char *content, char *sender, struct Room
 
         return SendToAll(sender, content, rooms);
     }
+    else if(strcmp(command,"!files")==0)
+    {
+        struct RoomNode* room = GetRoomWithUser(rooms, sender);
+        if(room==NULL)
+        {
+            printf("Error: could not found user!\n");
+            return 0;
+        }
+        response[0] = '\0';
+        strcat(response, "Files: \n");
+        char filesString[992];
+        FilesToString(&room->room.files,filesString);
+        strcat(response,filesString);
+        bulk_write(fd,response,CHUNKSIZE);
+        return 1;
+    }
+    else if(strcmp(command, "!push") == 0)
+    {
+        struct RoomNode* room = GetRoomWithUser(rooms, sender);
+        if(room==NULL)
+        {
+            printf("Error: could not found user!\n");
+            return 0;
+        }
+        struct FileNode *file = GetFileNode(&room->room.files,content);
+        if(file!=NULL)//there is no such file
+        {
+            bulk_write(fd,"There is no already file!\n",CHUNKSIZE);
+            return 0;
+        }
+        char msg[1000];
+        PrepareMessage(msg,"!file_request", content, "server");
+        bulk_write(fd,msg,CHUNKSIZE);
+        return AddNewFile(content, sender, room);
+    }
+    else if(strcmp(command,"!receive_file")==0)
+    {
+        struct RoomNode* room = GetRoomWithUser(rooms, sender);
+        if(room==NULL)
+        {
+            printf("Error: could not find user! (user: %s)\n",sender);
+            return 0;
+        }
+        return ReceiveFilePart(content, room->room.name);
+    }
+    else if(strcmp(command, "!pull") == 0)
+    {
+        return 1;
+    }
 
     return 0;
+}
+
+int AddNewFile(char *filename, char *owner, struct RoomNode* room)
+{
+    AddFileAtEnd(&room->room.files,filename,owner);
+    //create config file and add data to server.config
+    FILE* roomConfig;
+    char path[MAX_USERNAME_LENGTH+13];
+    strcpy(path, room->room.name);
+    strcat(path, "/room.config");
+    if((roomConfig = fopen(path, "a"))==NULL) //create file if one does not exist
+    {
+        perror("Open config file: ");
+        return 0;
+    }
+    char configLine[MAX_USERNAME_LENGTH + MAX_USERNAME_LENGTH + 2]; //+2 = | + \n
+    configLine[0] = '\0';
+
+    strcat(configLine, filename);
+    strcat(configLine,"|");
+    strcat(configLine,owner);
+    strcat(configLine,"\n");
+
+    if(fprintf(roomConfig, "%s", configLine) == 0)
+    {
+        perror("Writing to file: ");
+        return 0;
+    }
+    fclose(roomConfig);
+    return 1;
+
 }
 
 int SendPrivate(char *sender, char *msgContent, struct RoomList *rooms, int senderFd) {

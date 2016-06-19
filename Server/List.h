@@ -56,6 +56,7 @@ void AddFileAtEnd(struct FileList *list, char *filename, char* owner);
 int RemoveFile(struct FileList *list, char *filename);
 void PrintFileList(struct FileList *list);
 struct FileNode* GetFileNode(struct FileList *list ,char* filename);
+void FilesToString(struct FileList *list, char* retString);
 //ROOMs
 struct Room{
     char name[MAX_ROOMNAME_LENGTH];

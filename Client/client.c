@@ -44,6 +44,12 @@ int CloseRoom(char *content);
 
 int SendMessageToRoom(char *msgContent);
 
+int CheckFiles();
+
+int UploadFile(char *filename);
+
+int DownloadFile(char *filename);
+
 int main(int argc, char** argv)
 {
     printf("Hello in client!\n");
@@ -165,17 +171,17 @@ int ProcessCommand(char* command, char *content) {
     else if(strcmp(command, "!files")==0)
     {
         //printf("%s\n",command);
-        return 1;
+        return CheckFiles();
     }
     else if(strcmp(command, "!push")==0)
     {
     //    printf("%s\n",command);
-        return 1;
+        return UploadFile(content);
     }
     else if(strcmp(command, "!pull")==0)
     {
       //  printf("%s\n",command);
-        return 1;
+        return DownloadFile(content);
     }
     else if(strcmp(command, "!rm")==0)
     {
@@ -189,6 +195,27 @@ int ProcessCommand(char* command, char *content) {
     }
     else
         return -1;
+}
+
+int DownloadFile(char *filename) {
+    char msg[1000];
+    PrepareMessage(msg, "!push",filename, g_username);
+    SendMessage(msg);
+    return 1;
+}
+
+int UploadFile(char *filename) {
+    char msg[1000];
+    PrepareMessage(msg, "!push",filename, g_username);
+    SendMessage(msg);
+    return 1;
+}
+
+int CheckFiles() {
+    char msg[1000];
+    PrepareMessage(msg,"!files","",g_username);
+    SendMessage(msg);
+    return 1;
 }
 
 int SendMessageToRoom(char *msgContent) {
