@@ -8,12 +8,13 @@
 void ParseMessage(char *sender, char *command, char *commandContent, char *message)
 {
     //clear buffers
-    memset(command,0,sizeof(command));
-    memset(commandContent,0,sizeof(commandContent));
-    memset(sender,0,sizeof(sender));
+    sender[0] = '\0';
+    command[0] = '\0';
+    commandContent[0]='\0';
 
-    char curr = message[0];
-    int count = 0, i = 0;
+    char curr = message[1]; //skip '|'
+
+    int count = 1, i = 0;
     while(curr != '\n')
     {
         sender[i++] = message[count];
@@ -36,10 +37,12 @@ void ParseMessage(char *sender, char *command, char *commandContent, char *messa
         commandContent[i++] = curr;
         curr = message[++count];
     }
+    commandContent[i] = '\0';
 }
 
 void PrepareMessage(char *msg, char *command, char *content, char* username) {
     msg[0] = '\0';
+    strcat(msg,"|");
     strcat(msg, username);
     strcat(msg, "\n");
     strcat(msg, command);

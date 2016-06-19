@@ -14,24 +14,31 @@ int CreateNewRoom(char *name, char *owner, struct RoomList *rooms);
 
 int CloseUserRoom(char *roomname, char *sender, struct RoomList *rooms);
 
+int SendToAll(char *sender, char *content, struct RoomList* rooms);
+
 void *threadClientCommandHandler(void *arg)
 {
     threadArgClientCommand *targ = (threadArgClientCommand*)arg;
     int fd = targ->clientFd;
     char buf[CHUNKSIZE + 1];
 
-    if(bulk_read(fd, buf, CHUNKSIZE) < 0)
-        ERR("read");
+    while(bulk_read(fd, buf, CHUNKSIZE) > 0)
+    {
+        char sender[MAX_USERNAME_LENGTH];
+        char command[MAX_COMMAND_LENGTH+1];
+        char content[MAX_USERNAME_LENGTH + 45 + 2 + 4]; //31 + maxip + @ + : + portLength
 
-    char sender[MAX_USERNAME_LENGTH];
-    char command[MAX_COMMAND_LENGTH+1];
-    char content[MAX_USERNAME_LENGTH + 45 + 2 + 4]; //31 + maxip + @ + : + portLength
-    ParseMessage(sender, command, content, buf);
+        command[0] = '\0';
+        content[0] = '\0';
+        sender[0] = '\0';
 
-    ProcessClientCommand(command, content, sender, targ->currRoomList, fd);
-    command[0] = '\0';
-    content[0] = '\0';
-    sender[0] = '\0';
+        ParseMessage(sender, command, content, buf);
+
+        ProcessClientCommand(command, content, sender, targ->currRoomList, fd);
+
+        buf[0]='\0';
+    }
+    printf("EXITED\n");
     free(targ);
     close(fd);
     return NULL;
@@ -39,19 +46,22 @@ void *threadClientCommandHandler(void *arg)
 
 int ProcessClientCommand(char *command, char *content, char *sender, struct RoomList *rooms, int fd)
 {
+    char response[1000];
+    response[0] = '\0';
     if ( strcmp(command, "!connect") == 0)
     {
-        AddNodeAtEnd(&rooms->head->room.currentUsers, sender);
+        //AddNodeAtEnd(&rooms->head->room.currentUsers, sender);
+        AddUserAtEnd(&rooms->head->room.currentUsers, sender, fd);
         PrintRoomList(rooms);
         return 1;
     }
     else if(strcmp(command, "!rooms") == 0)
     {
-        char msg[200];
-        char msgContent[1000];
+        char msgContent[800];
+        msgContent[0]='\0';
         GetRooms(rooms, msgContent);
-        PrepareMessage(msg,"", msgContent,"");
-        bulk_write(fd,msg, CHUNKSIZE);
+        PrepareMessage(response,"!rooms", msgContent,"server");
+        bulk_write(fd,response, CHUNKSIZE);
         msgContent[0]='\0';
         //msg to send
         return 1;
@@ -59,11 +69,11 @@ int ProcessClientCommand(char *command, char *content, char *sender, struct Room
     else if(strcmp(command, "!enter") == 0)
     {
         printf("Content: %s\n", content);
-        char response[MAX_ROOMNAME_LENGTH + 1];
-        if(RemoveString(&rooms->head->room.currentUsers, sender) < 0) //user is not in anteroom
+        response[0]='\0';
+        if(RemoveUser(&rooms->head->room.currentUsers, sender) < 0) //user is not in anteroom
         {
             printf("no given user in anteroom\n");
-            strcat(response, "-1");
+            strcat(response, "Server: error at entering!");
             bulk_write(fd,response,CHUNKSIZE);
             return -1;
         }
@@ -71,16 +81,16 @@ int ProcessClientCommand(char *command, char *content, char *sender, struct Room
         if((room = GetRoomNode(rooms, content)) == NULL)
         {
             printf("No such a room!\n");
-            strcat(response, "-1");
+            strcat(response, "Server: There is no such room!");
             bulk_write(fd,response,CHUNKSIZE);
             return -1;
         }
-        AddNodeAtEnd(&room->room.currentUsers, sender);
-
+        //AddNodeAtEnd(&room->room.currentUsers, sender);
+        AddUserAtEnd(&room->room.currentUsers, sender, fd);
         PrintRoomList(rooms);
         //TMP
         response[0]='\0';
-        strcat(response, content);
+        PrepareMessage(response, "!enter", content, "server");
         bulk_write(fd, response, CHUNKSIZE);
         return 1;
     }
@@ -89,16 +99,17 @@ int ProcessClientCommand(char *command, char *content, char *sender, struct Room
         struct RoomNode* room = GetRoomWithUser(rooms, sender);
         if(strcmp(room->room.name,"anteroom")==0) //disconnect from server
         {
-            DisconnectUser(sender, rooms);
-            bulk_write(fd,"bye\0", 4);
+            DisconnectUser(sender, rooms);//TODO: correct leaving!
+            bulk_write(fd,"\n!bye\0", CHUNKSIZE);
             return 1;
         }
-        if(RemoveString(&room->room.currentUsers, sender) < 0)
+        if(RemoveUser(&room->room.currentUsers, sender) < 0)
         {
             printf("Room not found!\n");
         }
-        AddNodeAtEnd(&rooms->head->room.currentUsers, sender);
-        bulk_write(fd,"anteroom\0", 9);
+        AddUserAtEnd(&rooms->head->room.currentUsers, sender, fd);
+        PrepareMessage(response,"!leave","anteroom","server");
+        bulk_write(fd,response, CHUNKSIZE);
         PrintRoomList(rooms);
         return 1;
     }
@@ -112,10 +123,11 @@ int ProcessClientCommand(char *command, char *content, char *sender, struct Room
         int ret = CreateNewRoom(content, sender, rooms);
         if(ret < 0)
         {
-            bulk_write(fd, "error\0",6);
+            bulk_write(fd, "Server: Could not create room!",CHUNKSIZE);
             return -1;
         }
-        bulk_write(fd, content, CHUNKSIZE);
+        PrepareMessage(response,"!open",content,"server");
+        bulk_write(fd, response, CHUNKSIZE);
         PrintRoomList(rooms);
         return 1;
     }
@@ -124,15 +136,39 @@ int ProcessClientCommand(char *command, char *content, char *sender, struct Room
         int ret = CloseUserRoom(content, sender, rooms);
         if(ret < 0)
         {
-            bulk_write(fd, "error\0",6);
+            bulk_write(fd, "Server: Could not close the room!",CHUNKSIZE);
             return -1;
         }
-        bulk_write(fd, content, CHUNKSIZE);
+        PrepareMessage(response,"!close",content,"server");
+        bulk_write(fd, response, CHUNKSIZE);
         PrintRoomList(rooms);
         return 1;
     }
+    else if(strcmp(command, "!send")==0)
+    {
+        return SendToAll(sender, content, rooms);
+    }
 
     return -1;
+}
+
+int SendToAll(char *sender, char *content, struct RoomList* rooms) {
+    struct RoomNode *currRoom = GetRoomWithUser(rooms,sender);
+    struct UserNode* curr = currRoom->room.currentUsers.head;
+    char toSend[1000 + MAX_USERNAME_LENGTH +1];
+    toSend[0] = '\0';
+    strcat(toSend, sender);
+    strcat(toSend, ": ");
+    strcat(toSend, content);
+    while (curr != NULL)
+    {
+        if(strcmp(curr->user.name, sender) != 0) //other user then yourself
+        {
+            bulk_write(curr->user.fd, toSend, CHUNKSIZE);
+        }
+        curr = curr->next;
+    }
+    return 1;
 }
 
 int CloseUserRoom(char *roomname, char *sender, struct RoomList *rooms) {
@@ -187,6 +223,7 @@ int CreateNewRoom(char *name, char *owner, struct RoomList *rooms) {
         return -1;
     }
     char configLine[MAX_ROOMNAME_LENGTH + MAX_USERNAME_LENGTH + 2]; //+2 = | + \n
+    configLine[0] = '\0';
 
     strcat(configLine, name);
     strcat(configLine,"|");
@@ -202,11 +239,12 @@ int CreateNewRoom(char *name, char *owner, struct RoomList *rooms) {
     mkdir(name, 0700);
     FILE* roomConfig;
     char path[MAX_ROOMNAME_LENGTH+12];
+    path[0] = '\0';
     strcat(path,name);
     strcat(path,"/room.config");
     if((roomConfig = fopen(path, "w"))==NULL)
     {
-        perror("Open file config file: ");
+        perror("Open room config file: ");
         return -1;
     }
     fclose(roomConfig);
@@ -216,7 +254,7 @@ int CreateNewRoom(char *name, char *owner, struct RoomList *rooms) {
 
 void DisconnectUser(char *sender, struct RoomList* rooms) {
     struct RoomNode* room = GetRoomWithUser(rooms, sender);
-    if(RemoveString(&room->room.currentUsers, sender) < 0)
+    if(RemoveUser(&room->room.currentUsers, sender) < 0)
     {
         printf("Room not found!\n");
     }

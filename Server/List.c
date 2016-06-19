@@ -6,6 +6,7 @@
 #include <string.h>
 #include "List.h"
 
+//STRING LIST
 void AddNodeAtEnd(struct StringList *list ,char* nodeVal)
 {
     struct StringNode *node = (struct StringNode*)malloc(sizeof(struct StringNode));
@@ -23,7 +24,46 @@ void AddNodeAtEnd(struct StringList *list ,char* nodeVal)
         list->tail = node;
     }
 }
+int RemoveString(struct StringList *list, char* removeVal)
+{
+    struct StringNode *curr = list->head;
+    struct StringNode *prev = NULL;
 
+    if(strcmp(list->head->val, removeVal)==0) //removing head
+    {
+        // free(list->head);
+        list->head = list->head->next;
+        return 1;
+    }
+    curr = list->head->next;
+    prev = list->head;
+    while(curr != NULL)
+    {
+        if(strcmp(curr->val,removeVal)==0)
+        {
+            if(curr == list->tail)
+            {
+                list->tail = prev;
+            }
+            prev->next = curr->next;
+            free(curr);
+            return 1;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
+    return -1; //there is no such string
+}
+void PrintStringList(struct StringList *list)
+{
+    struct StringNode *curr = list->head;
+    while(curr != NULL)
+    {
+        printf("     %s\n", curr->val);
+        curr=curr->next;
+    }
+}
+//ROOM LIST
 void AddEmptyRoomAtEnd(struct RoomList *list, char *owner, char *roomname)
 {
     struct RoomNode *node = (struct RoomNode*)malloc(sizeof(struct RoomNode));
@@ -59,14 +99,14 @@ struct RoomNode* GetRoomWithUser(struct RoomList *list, char* username)
     struct RoomNode *curr = list->head;
     while(curr != NULL)
     {
-        struct StringNode *currStringN = curr->room.currentUsers.head;
-        while(currStringN != NULL)
+        struct UserNode *currUser= curr->room.currentUsers.head;
+        while(currUser != NULL)
         {
-            if(strcmp(currStringN->val, username) ==0)
+            if(strcmp(currUser->user.name, username) ==0)
             {
                 return curr;
             }
-            currStringN = currStringN->next;
+            currUser = currUser->next;
         }
         curr=curr->next;
     }
@@ -119,14 +159,43 @@ struct RoomNode* GetRoomNode(struct RoomList *list ,char* roomname)
     }
     return NULL;
 }
-int RemoveString(struct StringList *list, char* removeVal)
-{
-    struct StringNode *curr = list->head;
-    struct StringNode *prev = NULL;
 
-    if(strcmp(list->head->val, removeVal)==0) //removing head
+void PrintRoomList(struct RoomList *list)
+{
+    struct RoomNode *curr = list->head;
+    while(curr != NULL)
     {
-       // free(list->head);
+        printf("Room: %s; Owner: %s\n", curr->room.name, curr->room.owner);
+        PrintUserList(&curr->room.currentUsers);
+        curr=curr->next;
+    }
+}
+
+//USER LIST
+void AddUserAtEnd(struct UserList *list, char *name, int userFd) {
+    struct UserNode *node = (struct UserNode*)malloc(sizeof(struct UserNode));
+    node->next = NULL;
+    strncpy(node->user.name, name, strlen(name));
+    node->user.fd = userFd;
+    if(list->head == NULL)
+    {
+        list->head = node;
+        list->tail = node;
+    }
+    else
+    {
+        list->tail->next = node;
+        list->tail = node;
+    }
+}
+
+int RemoveUser(struct UserList *list, char *name) {
+    struct UserNode *curr = list->head;
+    struct UserNode *prev = NULL;
+
+    if(strcmp(list->head->user.name, name)==0) //removing head
+    {
+        // free(list->head);
         list->head = list->head->next;
         return 1;
     }
@@ -134,7 +203,7 @@ int RemoveString(struct StringList *list, char* removeVal)
     prev = list->head;
     while(curr != NULL)
     {
-        if(strcmp(curr->val,removeVal)==0)
+        if(strcmp(curr->user.name,name)==0)
         {
             if(curr == list->tail)
             {
@@ -149,22 +218,17 @@ int RemoveString(struct StringList *list, char* removeVal)
     }
     return -1; //there is no such string
 }
-void PrintRoomList(struct RoomList *list)
-{
-    struct RoomNode *curr = list->head;
+
+void PrintUserList(struct UserList *list) {
+    struct UserNode *curr = list->head;
     while(curr != NULL)
     {
-        printf("Room: %s; Owner: %s\n", curr->room.name, curr->room.owner);
-        PrintStringList(&curr->room.currentUsers);
+        printf("     %s : %i\n", curr->user.name, curr->user.fd);
         curr=curr->next;
     }
 }
-void PrintStringList(struct StringList *list)
-{
-    struct StringNode *curr = list->head;
-    while(curr != NULL)
-    {
-        printf("     %s\n", curr->val);
-        curr=curr->next;
-    }
-}
+
+
+
+
+
