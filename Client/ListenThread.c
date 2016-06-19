@@ -10,10 +10,10 @@
 
 void HandleResponse(char *buf);
 
-void listeningThreadHandler(void* arg) {
+void* listeningThreadHandler(void* arg) {
     struct ListeningThreadArg *targ = (struct ListeningThreadArg*)arg;
     char buf[1000];
-    while (bulk_read(*targ->serverFd, buf, 200))
+    while (bulk_read(*targ->serverFd, buf, 200) > 0)
     {
         if(buf[0]=='|')
             HandleResponse(buf);
@@ -22,13 +22,14 @@ void listeningThreadHandler(void* arg) {
 
         printf(">");
         buf[0] = '\0';
-        if(!targ->doListen)
-        {
-            break;
-        }
+//        if(!*targ->doListen)
+//        {
+//            break;
+//        }
     }
     free(targ);
     printf("LISTENING: STOP\n");
+    return NULL;
 }
 
 void HandleResponse(char *buf)
@@ -65,10 +66,5 @@ void HandleResponse(char *buf)
     {
         printf("Room: %s closed properly!\n", content);
     }
-    else if(strcmp(command, "!bye"))
-    {
-
-    }
-
 }
 

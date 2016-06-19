@@ -10,7 +10,7 @@ struct ListeningThreadArg{
     int *serverFd;
 };
 
-void listeningThreadHandler(void* arg);
+void* listeningThreadHandler(void* arg);
 
 
 #endif //CHATROOMUNIX_LISTENTHREAD_H

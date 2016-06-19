@@ -16,6 +16,7 @@ int CloseUserRoom(char *roomname, char *sender, struct RoomList *rooms);
 
 int SendToAll(char *sender, char *content, struct RoomList* rooms);
 
+volatile __sig_atomic_t doRun = 1;
 void *threadClientCommandHandler(void *arg)
 {
     threadArgClientCommand *targ = (threadArgClientCommand*)arg;
@@ -37,8 +38,12 @@ void *threadClientCommandHandler(void *arg)
         ProcessClientCommand(command, content, sender, targ->currRoomList, fd);
 
         buf[0]='\0';
+        if(!doRun)
+        {
+            break;
+        }
     }
-    printf("EXITED\n");
+    printf("USER THREAD EXITED\n");
     free(targ);
     close(fd);
     return NULL;
@@ -97,12 +102,13 @@ int ProcessClientCommand(char *command, char *content, char *sender, struct Room
     else if(strcmp(command, "!leave") == 0)
     {
         struct RoomNode* room = GetRoomWithUser(rooms, sender);
-        if(strcmp(room->room.name,"anteroom")==0) //disconnect from server
-        {
-            DisconnectUser(sender, rooms);//TODO: correct leaving!
-            bulk_write(fd,"\n!bye\0", CHUNKSIZE);
-            return 1;
-        }
+//        if(strcmp(room->room.name,"anteroom")==0) //disconnect from server
+//        {
+//            DisconnectUser(sender, rooms);//TODO: correct leaving!
+//
+//            bulk_write(fd,"\n!bye\0", CHUNKSIZE);
+//            return 1;
+//        }
         if(RemoveUser(&room->room.currentUsers, sender) < 0)
         {
             printf("Room not found!\n");
@@ -115,6 +121,7 @@ int ProcessClientCommand(char *command, char *content, char *sender, struct Room
     }
     else if(strcmp(command, "!bye")==0)
     {
+        doRun = 0;
         DisconnectUser(sender, rooms);
         return 1;
     }

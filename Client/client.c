@@ -16,7 +16,7 @@
 #define INPUT_MAX_LENGTH 90 //max length is here: !connect username(31)@IPv6(45):port(4)
 #define COMMAND_LENGTH 8
 #define MAX_MSG_SIZE 200
-int g_doListen = 1;
+__sig_atomic_t g_doListen = 1;
 volatile __sig_atomic_t isRunning = 1;
 
 
@@ -301,6 +301,7 @@ int ConnectToServer(char *content) {
     struct ListeningThreadArg *targ;
     if ((targ = (struct ListeningThreadArg *) calloc (1, sizeof(struct ListeningThreadArg))) == NULL)
         ERR("calloc");
+    g_doListen = 1;
     targ->doListen = &g_doListen;
     targ->serverFd = &g_serverFd;
     pthread_t thread;
