@@ -16,7 +16,6 @@ void *threadClientCommandHandler(void *arg)
     threadArgClientCommand *targ = (threadArgClientCommand*)arg;
     int fd = targ->clientFd;
     char buf[1000 + 1];
-
     while(bulk_read(fd, buf, CHUNKSIZE) > 0)
     {
         char sender[MAX_USERNAME_LENGTH];

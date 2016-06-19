@@ -14,6 +14,10 @@
 #include <netdb.h>
 #include <sys/un.h>
 
+#define ERR(source) (perror(source),\
+		     fprintf(stderr,"%s:%d\n",__FILE__,__LINE__),\
+		     exit(EXIT_FAILURE))
+
 
 #ifndef CHATROOMUNIX_SOCKETHELPERS_H
 #define CHATROOMUNIX_SOCKETHELPERS_H

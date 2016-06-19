@@ -4,13 +4,13 @@
 
 #include "../Common/socketHelpers.h"
 #include "../Common/Messaging.h"
-#include "../Common/signalHelpers.h"
 #include "ClientGlobals.h"
 #include "ListenThread.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <signal.h>
 
 #define INPUT_MAX_LENGTH 90 //max length is here: !connect username(31)@IPv6(45):port(4)
 #define COMMAND_LENGTH 8
@@ -315,13 +315,19 @@ int ConnectToServer(char *content) {
     }
     ip[i]='\0';
     char port[4];
-    //charCount++;
-    for (int j = 0; j < 4; ++j) {
-        port[j] = content[charCount++];
+    if(currChar!=':') //use default port
+    {
+        g_port = 8888;
     }
-    printf("%s : %s : %s\n",username,ip,port);
-
-    g_port = atoi(port);
+    else
+    {
+        //charCount++;
+        for (int j = 0; j < 4; ++j) {
+            port[j] = content[charCount++];
+        }
+        g_port = atoi(port);
+    }
+    printf("%s : %s : %i\n",username,ip,g_port);
     strcpy(g_serverip, ip);
 
     g_serverFd = connect_socket(g_serverip, (uint16_t) g_port); //make connection with server

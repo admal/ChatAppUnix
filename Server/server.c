@@ -4,7 +4,6 @@
 
 #include "../Common/socketHelpers.h"
 #include "List.h"
-#include "../Common/signalHelpers.h"
 #include "Globals.h"
 #include "ThreadHandling.h"
 
@@ -24,7 +23,14 @@ const char CONFIG_ROOM_FILENAME[] = "room.config";
 struct RoomList g_RoomList;
 
 volatile __sig_atomic_t doWork = 1;
-
+int sethandler( void (*f)(int), int sigNo) {
+    struct sigaction act;
+    memset(&act, 0, sizeof(struct sigaction));
+    act.sa_handler = f;
+    if (-1==sigaction(sigNo, &act, NULL))
+        return -1;
+    return 0;
+}
 void sigintHandler(int sig){
     doWork = 0;
 }

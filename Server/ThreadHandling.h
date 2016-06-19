@@ -6,7 +6,6 @@
 #define CHATROOMUNIX_THREADHANDLING_H
 
 #include "../Common/socketHelpers.h"
-#include "../Common/signalHelpers.h"
 #include "List.h"
 
 #define MAX_COMMAND_LENGTH 8

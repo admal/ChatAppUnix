@@ -9,9 +9,7 @@
       <sourceFolder url="file://$MODULE_DIR$/Server/List.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Server/ThreadHandling.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Common/signalHelpers.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Common/FileHelpers.c" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Common/signalHelpers.c" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Common/socketHelpers.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Common/Messaging.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Common/socketHelpers.c" isTestSource="false" />
